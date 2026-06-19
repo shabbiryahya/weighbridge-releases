@@ -1,0 +1,6 @@
+Weighbridge Management System
+Copyright 2026 Shabbir Yahya - Saif Enterprise
+
+This software is licensed, not sold.
+Unauthorized copying or distribution is prohibited.
+Contact: shabbir@saifenterprise.com

@@ -1,0 +1,83 @@
+{
+  "name": "weighbridge-app",
+  "version": "1.0.0",
+  "description": "Weighbridge Management System",
+  "main": "src/main.js",
+  "author": {
+    "name": "Shabbir Yahya",
+    "email": "shabbir@saifenterprise.com"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run client\" \"npm run electron\"",
+    "client": "cd client && npm run dev",
+    "electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
+    "build": "cd client && npm run build",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.saifenterprise.weighbridge",
+    "productName": "Weighbridge Management System",
+    "copyright": "Copyright © 2026 Shabbir Yahya",
+    "publish": {
+      "provider": "github",
+      "owner": "shabbiryahya",
+      "repo": "weighbridge-releases",
+      "private": false
+    },
+    "directories": {
+      "output": "dist-build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Weighbridge Management",
+      "license": "build/license.txt"
+    },
+    "files": [
+      "src/**/*",
+      "client/dist/**/*",
+      "package.json",
+      "node_modules/**/*",
+      ".env"
+    ],
+    "extraResources": [],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/mdb-reader/**/*"
+    ]
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^17.4.2",
+    "electron-log": "^5.4.0",
+    "electron-updater": "^6.8.9",
+    "mdb-reader": "^2.2.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
+    "electron": "^36.3.1",
+    "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
+    "wait-on": "^8.0.3"
+  }
+}
