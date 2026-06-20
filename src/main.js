@@ -128,7 +128,7 @@ ipcMain.handle('tickets:getRecent', () => {
   return db.prepare(`
     SELECT * FROM tickets
     ORDER BY created_at DESC
-    LIMIT 10
+    LIMIT 50
   `).all()
 })
 

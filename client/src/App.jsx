@@ -11,6 +11,7 @@ import LicenseScreen from "./modules/auth/LicenseScreen";
 import HelpScreen from "./modules/help/HelpScreen";
 import { PlanProvider } from "./hooks/usePlan";
 import { usePlan } from "./hooks/usePlan";
+import AppTour from "./components/AppTour";
 
 const NAV_ITEMS = [
   {
@@ -60,6 +61,10 @@ function AppContent() {
   const [activePage, setActivePage] = useState("weighing");
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [updateToast, setUpdateToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showTour, setShowTour] = useState(
+    !localStorage.getItem("wb_tour_done"),
+  );
 
   const { plan } = usePlan();
   const { can } = usePlan();
@@ -126,6 +131,7 @@ function AppContent() {
         background: "#f0f0f0",
       }}
     >
+      {showTour && <AppTour onComplete={() => setShowTour(false)} />}
       {updateToast && (
         <div
           style={{
@@ -180,26 +186,59 @@ function AppContent() {
       {/* ── Sidebar ── */}
       <div
         style={{
-          width: 200,
-          minWidth: 200,
+          width: sidebarOpen ? 200 : 60,
+          minWidth: sidebarOpen ? 200 : 60,
           background: "#1a1a2e",
           color: "white",
           display: "flex",
           flexDirection: "column",
+          transition: "width 0.2s ease",
+          overflow: "hidden",
         }}
       >
         {/* Logo */}
         <div
-          style={{ padding: "18px 20px 16px", borderBottom: "1px solid #333" }}
+          style={{
+            padding: "14px 12px",
+            borderBottom: "1px solid #333",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
         >
-          <p
-            style={{ margin: 0, fontSize: 10, color: "#888", letterSpacing: 1 }}
+          {sidebarOpen && (
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 10,
+                  color: "#888",
+                  letterSpacing: 1,
+                }}
+              >
+                WEIGHBRIDGE
+              </p>
+              <h2 style={{ margin: "3px 0 0", fontSize: 15, fontWeight: 700 }}>
+                Management
+              </h2>
+            </div>
+          )}
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#888",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: "4px",
+              marginLeft: sidebarOpen ? 0 : "auto",
+              marginRight: sidebarOpen ? 0 : "auto",
+            }}
+            title={sidebarOpen ? "Collapse menu" : "Expand menu"}
           >
-            WEIGHBRIDGE
-          </p>
-          <h2 style={{ margin: "3px 0 0", fontSize: 15, fontWeight: 700 }}>
-            Management
-          </h2>
+            {sidebarOpen ? "✕" : "☰"}
+          </button>
         </div>
 
         {/* Nav */}
@@ -208,15 +247,16 @@ function AppContent() {
             <button
               key={item.id}
               onClick={() => setActivePage(item.id)}
+              title={item.label}
               style={{
                 width: "100%",
                 background: currentPage === item.id ? "#16213e" : "transparent",
                 color: currentPage === item.id ? "#e94560" : "#ccc",
                 border: "none",
-                padding: "11px 20px",
-                textAlign: "left",
+                padding: sidebarOpen ? "11px 20px" : "11px 0",
+                textAlign: sidebarOpen ? "left" : "center",
                 cursor: "pointer",
-                fontSize: 14,
+                fontSize: sidebarOpen ? 14 : 20,
                 borderLeft:
                   currentPage === item.id
                     ? "3px solid #e94560"
@@ -224,20 +264,21 @@ function AppContent() {
                 transition: "all 0.2s",
               }}
             >
-              {item.icon} {item.label}
+              {item.icon}
+              {sidebarOpen ? ` ${item.label}` : ""}
             </button>
           ))}
         </nav>
 
         {/* ── User section (SINGLE block) ── */}
         <div style={{ padding: "12px 16px", borderTop: "1px solid #333" }}>
-          {/* User info */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 10,
               marginBottom: 10,
+              justifyContent: sidebarOpen ? "flex-start" : "center",
             }}
           >
             <div
@@ -255,97 +296,116 @@ function AppContent() {
             >
               {roleIcon(user.role)}
             </div>
-            <div style={{ overflow: "hidden" }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "white",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {user.full_name || user.username}
+            {sidebarOpen && (
+              <div style={{ overflow: "hidden" }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "white",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user.full_name || user.username}
+                </div>
+                <div style={{ fontSize: 11, color: roleColors[user.role] }}>
+                  {user.role}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    background:
+                      plan === "enterprise"
+                        ? "#9c27b0"
+                        : plan === "pro"
+                          ? "#2196f3"
+                          : "#888",
+                    color: "white",
+                    padding: "2px 6px",
+                    borderRadius: 99,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    marginTop: 2,
+                    display: "inline-block",
+                  }}
+                >
+                  {plan}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: roleColors[user.role] }}>
-                {user.role}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  background:
-                    plan === "enterprise"
-                      ? "#9c27b0"
-                      : plan === "pro"
-                        ? "#2196f3"
-                        : "#888",
-                  color: "white",
-                  padding: "2px 6px",
-                  borderRadius: 99,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  marginTop: 2,
-                  display: "inline-block",
-                }}
-              >
-                {plan}
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Change Password */}
-          <button
-            onClick={() => setShowChangePassword(true)}
-            style={{
-              width: "100%",
-              padding: "6px",
-              background: "transparent",
-              color: "#888",
-              border: "1px solid #333",
-              borderRadius: 6,
-              fontSize: 11,
-              cursor: "pointer",
-              marginBottom: 6,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#16213e";
-              e.currentTarget.style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "#888";
-            }}
-          >
-            🔑 Change Password
-          </button>
-
-          {/* Sign Out */}
-          <button
-            onClick={logout}
-            style={{
-              width: "100%",
-              padding: "7px",
-              background: "transparent",
-              color: "#888",
-              border: "1px solid #333",
-              borderRadius: 6,
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#e94560";
-              e.currentTarget.style.color = "white";
-              e.currentTarget.style.borderColor = "#e94560";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "#888";
-              e.currentTarget.style.borderColor = "#333";
-            }}
-          >
-            🚪 Sign Out
-          </button>
+          {sidebarOpen ? (
+            <>
+              <button
+                onClick={() => setShowChangePassword(true)}
+                style={{
+                  width: "100%",
+                  padding: "6px",
+                  background: "transparent",
+                  color: "#888",
+                  border: "1px solid #333",
+                  borderRadius: 6,
+                  fontSize: 11,
+                  cursor: "pointer",
+                  marginBottom: 6,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#16213e";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "#888";
+                }}
+              >
+                🔑 Change Password
+              </button>
+              <button
+                onClick={logout}
+                style={{
+                  width: "100%",
+                  padding: "7px",
+                  background: "transparent",
+                  color: "#888",
+                  border: "1px solid #333",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e94560";
+                  e.currentTarget.style.color = "white";
+                  e.currentTarget.style.borderColor = "#e94560";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "#888";
+                  e.currentTarget.style.borderColor = "#333";
+                }}
+              >
+                🚪 Sign Out
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={logout}
+              title="Sign Out"
+              style={{
+                width: "100%",
+                padding: "7px",
+                background: "transparent",
+                color: "#888",
+                border: "none",
+                fontSize: 18,
+                cursor: "pointer",
+              }}
+            >
+              🚪
+            </button>
+          )}
         </div>
       </div>
 
@@ -409,6 +469,14 @@ function AppContent() {
   );
 }
 
+function AppInner() {
+  const { user, login } = useAuth();
+  const [licensed, setLicensed] = useState(false);
+  if (!licensed) return <LicenseScreen onActivated={() => setLicensed(true)} />;
+  if (!user) return <LoginScreen onLogin={login} />;
+  return <AppContent />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -417,13 +485,4 @@ export default function App() {
       </PlanProvider>
     </AuthProvider>
   );
-}
-
-function AppInner() {
-  const { user, login } = useAuth();
-  const [licensed, setLicensed] = useState(false);
-
-  if (!licensed) return <LicenseScreen onActivated={() => setLicensed(true)} />;
-  if (!user) return <LoginScreen onLogin={login} />;
-  return <AppContent />;
 }

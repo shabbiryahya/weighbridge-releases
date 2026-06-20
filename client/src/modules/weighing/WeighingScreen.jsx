@@ -159,6 +159,8 @@ export default function WeighingScreen() {
   const [printSettings, setPrintSettings] = useState({});
   const [printing, setPrinting] = useState(false);
   const [chargesConfig, setChargesConfig] = useState({});
+  const [recentPage, setRecentPage] = useState(1);
+  const RECENT_PER_PAGE = 5;
 
   // ── Load all data on mount
   useEffect(() => {
@@ -198,21 +200,21 @@ export default function WeighingScreen() {
   }, []);
 
   // ── Simulate hardware weight (replace with serialport later)
-  useEffect(() => {
-    let count = 0;
-    let target = 23450;
-    const t = setInterval(() => {
-      const fluctuation =
-        Math.random() > 0.7 ? Math.floor(Math.random() * 20) - 10 : 0;
-      setLiveWeight(target + fluctuation);
-      setIsStable(fluctuation === 0);
-      if (++count > 30) {
-        target = target === 23450 ? 8200 : 23450;
-        count = 0;
-      }
-    }, 500);
-    return () => clearInterval(t);
-  }, []);
+  // useEffect(() => {
+  //   let count = 0;
+  //   let target = 23450;
+  //   const t = setInterval(() => {
+  //     const fluctuation =
+  //       Math.random() > 0.7 ? Math.floor(Math.random() * 20) - 10 : 0;
+  //     setLiveWeight(target + fluctuation);
+  //     setIsStable(fluctuation === 0);
+  //     if (++count > 30) {
+  //       target = target === 23450 ? 8200 : 23450;
+  //       count = 0;
+  //     }
+  //   }, 500);
+  //   return () => clearInterval(t);
+  // }, []);
 
   // ── Capture weight into correct field
   const captureGross = useCallback(() => {
@@ -1162,7 +1164,6 @@ export default function WeighingScreen() {
             </div>
           )}
 
-          {/* Recent Tickets */}
           {activeTab === "recent" && (
             <div
               style={{
@@ -1186,61 +1187,136 @@ export default function WeighingScreen() {
                     No tickets yet
                   </p>
                 ) : (
-                  recentTickets.map((t) => (
-                    <div
-                      key={t.id}
-                      style={{
-                        padding: "8px 10px",
-                        borderBottom: "1px solid #f5f5f5",
-                        fontSize: 13,
-                      }}
-                    >
+                  recentTickets
+                    .slice(
+                      (recentPage - 1) * RECENT_PER_PAGE,
+                      recentPage * RECENT_PER_PAGE,
+                    )
+                    .map((t) => (
                       <div
+                        key={t.id}
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
+                          padding: "8px 10px",
+                          borderBottom: "1px solid #f5f5f5",
+                          fontSize: 13,
                         }}
                       >
-                        <strong style={{ color: "#1a1a2e" }}>
-                          #{t.ticket_no}
-                        </strong>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            padding: "1px 6px",
-                            borderRadius: 99,
-                            fontWeight: 600,
-                            background:
-                              t.status === "complete" ? "#f0fdf9" : "#fff8e1",
-                            color:
-                              t.status === "complete" ? "#00a37a" : "#cc7a00",
-                          }}
-                        >
-                          {t.status === "complete" ? "Complete" : "Pending"}
-                        </span>
-                      </div>
-                      <div
-                        style={{ color: "#888", fontSize: 12, marginTop: 2 }}
-                      >
-                        {t.vehicle_no} · {t.material_name || "—"}
-                      </div>
-                      {t.net_weight > 0 && (
                         <div
                           style={{
-                            color: "#e94560",
-                            fontSize: 12,
-                            fontWeight: 600,
+                            display: "flex",
+                            justifyContent: "space-between",
                           }}
                         >
-                          Net: {Number(t.net_weight).toLocaleString("en-IN")} kg
-                          {t.charges > 0 &&
-                            ` · ₹${Number(t.charges).toLocaleString("en-IN")}`}
+                          <strong style={{ color: "#1a1a2e" }}>
+                            #{t.ticket_no}
+                          </strong>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              padding: "1px 6px",
+                              borderRadius: 99,
+                              fontWeight: 600,
+                              background:
+                                t.status === "complete" ? "#f0fdf9" : "#fff8e1",
+                              color:
+                                t.status === "complete" ? "#00a37a" : "#cc7a00",
+                            }}
+                          >
+                            {t.status === "complete" ? "Complete" : "Pending"}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))
+                        <div
+                          style={{ color: "#888", fontSize: 12, marginTop: 2 }}
+                        >
+                          {t.vehicle_no} · {t.material_name || "—"}
+                        </div>
+                        {t.net_weight > 0 && (
+                          <div
+                            style={{
+                              color: "#e94560",
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            Net: {Number(t.net_weight).toLocaleString("en-IN")}{" "}
+                            kg
+                            {t.charges > 0 &&
+                              ` · ₹${Number(t.charges).toLocaleString("en-IN")}`}
+                          </div>
+                        )}
+                      </div>
+                    ))
                 )}
               </div>
+
+              {/* Pagination */}
+              {recentTickets.length > RECENT_PER_PAGE && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 10px",
+                    borderTop: "1px solid #f5f5f5",
+                    background: "#fafafa",
+                  }}
+                >
+                  <button
+                    onClick={() => setRecentPage((p) => Math.max(1, p - 1))}
+                    disabled={recentPage === 1}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: recentPage === 1 ? "#ccc" : "#1a1a2e",
+                      cursor: recentPage === 1 ? "not-allowed" : "pointer",
+                      fontSize: 18,
+                      padding: "0 4px",
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <span style={{ fontSize: 11, color: "#888" }}>
+                    {(recentPage - 1) * RECENT_PER_PAGE + 1}–
+                    {Math.min(
+                      recentPage * RECENT_PER_PAGE,
+                      recentTickets.length,
+                    )}{" "}
+                    of {recentTickets.length}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setRecentPage((p) =>
+                        Math.min(
+                          Math.ceil(recentTickets.length / RECENT_PER_PAGE),
+                          p + 1,
+                        ),
+                      )
+                    }
+                    disabled={
+                      recentPage >=
+                      Math.ceil(recentTickets.length / RECENT_PER_PAGE)
+                    }
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color:
+                        recentPage >=
+                        Math.ceil(recentTickets.length / RECENT_PER_PAGE)
+                          ? "#ccc"
+                          : "#1a1a2e",
+                      cursor:
+                        recentPage >=
+                        Math.ceil(recentTickets.length / RECENT_PER_PAGE)
+                          ? "not-allowed"
+                          : "pointer",
+                      fontSize: 18,
+                      padding: "0 4px",
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
