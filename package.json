@@ -1,6 +1,6 @@
 {
   "name": "weighbridge-app",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Weighbridge Management System",
   "main": "src/main.js",
   "author": {
@@ -12,7 +12,7 @@
     "client": "cd client && npm run dev",
     "electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build": "cd client && npm run build",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder --publish onTag"
   },
   "build": {
     "appId": "com.saifenterprise.weighbridge",
@@ -23,7 +23,8 @@
       "owner": "shabbiryahya",
       "repo": "weighbridge-releases",
       "private": false,
-      "releaseType": "release"
+      "releaseType": "release",
+      "publishAutoUpdate": true
     },
     "directories": {
       "output": "dist-build"
