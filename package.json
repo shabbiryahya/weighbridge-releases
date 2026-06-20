@@ -1,6 +1,6 @@
 {
   "name": "weighbridge-app",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "description": "Weighbridge Management System",
   "main": "src/main.js",
   "author": {
