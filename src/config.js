@@ -3,11 +3,12 @@
 // Reads/writes %APPDATA%\weighbridge-app\config.json
 // Change SERVER_URL here anytime (even after install) — no rebuild needed.
 
-const fs   = require('fs')
+const fs = require('fs')
 const path = require('path')
 
 const DEFAULTS = {
   SERVER_URL: 'http://wcddev.duckdns.org',
+  WB_DEV_KEY: 'WB_LICENSE_2026_SECRET',
 }
 
 function getConfigPath() {

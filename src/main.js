@@ -29,6 +29,7 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
+
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), 'client', 'dist', 'index.html'))
   }
@@ -54,6 +55,7 @@ app.whenReady().then(() => {
     log.error('Database init failed:', error)
   }
   createWindow()
+  mainWindow.webContents.openDevTools()
   // ── Auto Updater ──────────────────────────────────
   if (!isDev) {
     setTimeout(() => {
@@ -1225,7 +1227,7 @@ ipcMain.handle('licenseManager:create', async (event, clientName, plan, expiresA
 ipcMain.handle('licenseManager:getAll', async () => {
   try {
     const response = await fetch(`${getConfig().SERVER_URL}/api/license/all`, {
-      headers: { 'x-dev-key': 'WB_LICENSE_2026_SECRET' },
+      headers: { 'x-dev-key': getConfig().WB_DEV_KEY },
       signal: AbortSignal.timeout(8000),
     })
     return await response.json()
