@@ -28,7 +28,7 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
 
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), 'client', 'dist', 'index.html'))
@@ -55,7 +55,7 @@ app.whenReady().then(() => {
     log.error('Database init failed:', error)
   }
   createWindow()
-  mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
   // ── Auto Updater ──────────────────────────────────
   if (!isDev) {
     setTimeout(() => {
