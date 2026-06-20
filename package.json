@@ -22,7 +22,8 @@
       "provider": "github",
       "owner": "shabbiryahya",
       "repo": "weighbridge-releases",
-      "private": false
+      "private": false,
+      "releaseType": "release"
     },
     "directories": {
       "output": "dist-build"
