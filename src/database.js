@@ -231,6 +231,12 @@ function initializeTables() {
     .toUpperCase()
   const devPassword = `WB-${hash}`
 
+  /*
+   * DEFAULT LOGIN CREDENTIALS — CHANGE BEFORE CLIENT DELIVERY
+   * Admin: username=admin, password=Admin@2026, pin=7491
+   * Operator: username=operator, password=Op@2026, pin=3852
+   * Superadmin: Google Authenticator OTP only (Ctrl+Shift+D)
+   */
   const insertUser = database.prepare(`
   INSERT OR IGNORE INTO users (username, password, pin, role, full_name)
   VALUES (?, ?, ?, ?, ?)
@@ -238,9 +244,9 @@ function initializeTables() {
   // Superadmin — strong unique password, no PIN
   insertUser.run('superadmin', devPassword, null, 'superadmin', 'Developer')
   // Admin — client owner
-  insertUser.run('admin', 'admin123', '1111', 'admin', 'Admin')
+  insertUser.run('admin', 'Admin@2026', '7491', 'admin', 'Admin')
   // Operator — daily staff
-  insertUser.run('operator', 'op123', '2222', 'operator', 'Operator')
+  insertUser.run('operator', 'Op@2026', '3852', 'operator', 'Operator')
 
   log.info('Default superadmin password:', devPassword)
 

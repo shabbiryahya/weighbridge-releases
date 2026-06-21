@@ -472,7 +472,17 @@ function AppContent() {
 function AppInner() {
   const { user, login } = useAuth();
   const [licensed, setLicensed] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    window.db.session.get().then((restoredUser) => {
+      if (restoredUser) login(restoredUser);
+      setSessionChecked(true);
+    });
+  }, []);
+
   if (!licensed) return <LicenseScreen onActivated={() => setLicensed(true)} />;
+  if (!sessionChecked) return null;
   if (!user) return <LoginScreen onLogin={login} />;
   return <AppContent />;
 }

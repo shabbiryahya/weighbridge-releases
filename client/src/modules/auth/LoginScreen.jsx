@@ -78,6 +78,7 @@ export default function LoginScreen({ onLogin }) {
           setError("Use developer access for this account");
           return;
         }
+        await window.db.session.save(result.user);
         onLogin(result.user);
       } else {
         const newAttempts = attempts + 1;
@@ -108,6 +109,7 @@ export default function LoginScreen({ onLogin }) {
           return;
         }
         setAttempts(0);
+        await window.db.session.save(result.user);
         onLogin(result.user);
       } else {
         setAttempts((a) => a + 1);
@@ -309,6 +311,15 @@ export default function LoginScreen({ onLogin }) {
                 }}>
                   {loading ? "Signing in..." : "Sign In →"}
                 </button>
+              </div>
+            )}
+
+            {import.meta.env.DEV && (
+              <div style={{
+                marginTop: 16, fontSize: 11, color: "#aaa",
+                textAlign: "center", borderTop: "1px dashed #eee", paddingTop: 12,
+              }}>
+                Dev: admin/Admin@2026 PIN:7491 | operator/Op@2026 PIN:3852
               </div>
             )}
 

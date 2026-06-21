@@ -63,6 +63,11 @@ contextBridge.exposeInMainWorld('db', {
     verifyOtp: (token) => ipcRenderer.invoke('auth:verifyOtp', token),
     devAccess: () => ipcRenderer.invoke('auth:devAccess'),
   },
+  session: {
+    get:   ()     => ipcRenderer.invoke('session:get'),
+    save:  (user) => ipcRenderer.invoke('session:save', user),
+    clear: ()     => ipcRenderer.invoke('session:clear'),
+  },
   users: {
     getAll: () => ipcRenderer.invoke('users:getAll'),
     add: (data) => ipcRenderer.invoke('users:add', data),

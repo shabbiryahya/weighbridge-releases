@@ -6,7 +6,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
 
   const login = (userData) => setUser(userData)
-  const logout = () => setUser(null)
+  const logout = () => {
+    window.db.session.clear()
+    setUser(null)
+  }
 
   const can = (action) => {
     if (!user) return false

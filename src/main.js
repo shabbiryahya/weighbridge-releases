@@ -1038,14 +1038,10 @@ ipcMain.handle('diagnostics:run', async () => {
     const db = getDatabase()
     db.prepare('SELECT 1').get()
     const ticketCount = db.prepare('SELECT COUNT(*) as c FROM tickets').get()
-    const dbPath = require('path').join(
-      require('electron').app.getPath('userData'),
-      'weighbridge.db'
-    )
     results.database = {
       status: 'ok',
       message: 'Connected',
-      detail: `${ticketCount.c} tickets · ${dbPath}`,
+      detail: `${ticketCount.c} tickets`,
     }
   } catch (e) {
     results.database = {
@@ -1289,6 +1285,45 @@ ipcMain.handle('auth:devAccess', () => {
       full_name: user.full_name,
       role: user.role,
     }
+  }
+})
+
+// Restore a persisted login session if under 24h old
+ipcMain.handle('session:get', () => {
+  const fs = require('fs')
+  const sessionPath = path.join(app.getPath('userData'), 'session.json')
+  if (!fs.existsSync(sessionPath)) return null
+  try {
+    const { user, loginAt } = JSON.parse(fs.readFileSync(sessionPath, 'utf8'))
+    const ageMs = Date.now() - new Date(loginAt).getTime()
+    if (ageMs < 24 * 60 * 60 * 1000) return user
+    return null
+  } catch (e) {
+    return null
+  }
+})
+
+// Persist a login session
+ipcMain.handle('session:save', (event, user) => {
+  const fs = require('fs')
+  const sessionPath = path.join(app.getPath('userData'), 'session.json')
+  try {
+    fs.writeFileSync(sessionPath, JSON.stringify({ user, loginAt: new Date().toISOString() }, null, 2))
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
+})
+
+// Clear a persisted session (sign out)
+ipcMain.handle('session:clear', () => {
+  const fs = require('fs')
+  const sessionPath = path.join(app.getPath('userData'), 'session.json')
+  try {
+    if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath)
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message }
   }
 })
 

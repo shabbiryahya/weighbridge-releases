@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import MigrationTool from "./MigrationTool";
 import DiagnosticsScreen from "./DiagnosticsScreen";
 import LicenseManager from "./LicenseManager";
+import MaskedSecretReveal from "../../components/MaskedSecretReveal";
 import { useAuth } from "../../hooks/useAuth";
 import PlanGate from "../../components/PlanGate";
 import { usePlan } from "../../hooks/usePlan";
@@ -748,10 +749,6 @@ export default function SettingsScreen() {
           <div>
             {[
               ["App Version", appInfo.version || "1.0.0"],
-              ["Platform", appInfo.platform || "win32"],
-              ["Node.js Version", appInfo.nodeVersion || "—"],
-              ["Electron Version", appInfo.electronVersion || "—"],
-              ["Database Path", appInfo.dbPath || "—"],
               ["Next Ticket No.", settings.ticket_next_no || "1"],
             ].map(([label, value]) => (
               <div key={label} style={S.infoRow}>
@@ -827,11 +824,17 @@ export default function SettingsScreen() {
                 <strong>{settings.license_plan || "basic"}</strong>
                 {settings.license_client ? ` · ${settings.license_client}` : ""}
               </p>
-              <p style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>
-                Key:{" "}
-                <code style={{ fontSize: 11 }}>
-                  {settings.license_key || "—"}
-                </code>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#aaa",
+                  marginBottom: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                Key: <MaskedSecretReveal value={settings.license_key} />
               </p>
 
               {/* Toggle input on button click */}

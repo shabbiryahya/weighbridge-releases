@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import MaskedSecretReveal from '../../components/MaskedSecretReveal'
 
 const STATUS_CONFIG = {
   ok:      { color: '#00d4aa', bg: '#f0fdf9', icon: '✅', label: 'OK'      },
@@ -128,7 +129,9 @@ export default function DiagnosticsScreen() {
                   </div>
                   {result && (
                     <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                      {result.detail}
+                      {key === 'license' && result.status === 'ok'
+                        ? <MaskedSecretReveal value={result.detail} monoFontSize={12} />
+                        : result.detail}
                     </div>
                   )}
                 </div>
