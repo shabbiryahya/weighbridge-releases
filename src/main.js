@@ -56,6 +56,14 @@ app.whenReady().then(() => {
   }
   createWindow()
   // mainWindow.webContents.openDevTools()
+
+  if (isDev) {
+    const { globalShortcut } = require('electron')
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+      if (mainWindow) mainWindow.webContents.toggleDevTools()
+    })
+  }
+
   // ── Auto Updater ──────────────────────────────────
   if (!isDev) {
     setTimeout(() => {
@@ -89,6 +97,11 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  const { globalShortcut } = require('electron')
+  globalShortcut.unregisterAll()
 })
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
