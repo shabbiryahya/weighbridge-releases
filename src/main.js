@@ -7,9 +7,13 @@ const MDBReaderModule = require('mdb-reader')
 const MDBReader = MDBReaderModule.default || MDBReaderModule
 const { SERVER_URL } = require('./config')
 const { autoUpdater } = require('electron-updater')
+const { SerialPort } = require('serialport')
+const { ReadlineParser } = require('@serialport/parser-readline')
 
 const isDev = process.env.NODE_ENV === 'development'
 let mainWindow
+let serialPort = null
+let serialParser = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -40,6 +44,78 @@ function createWindow() {
   })
 }
 
+// ── SERIAL PORT ──────────────────────────────────────────────────────────────
+
+function startSerialPort(portPath, baudRate) {
+  try {
+    if (serialPort?.isOpen) serialPort.close()
+
+    serialPort = new SerialPort({
+      path: portPath,
+      baudRate: parseInt(baudRate) || 2400,
+      dataBits: 8,
+      parity: 'none',
+      stopBits: 1,
+      autoOpen: true,
+    })
+
+    serialParser = serialPort.pipe(new ReadlineParser({ delimiter: '\r\n' }))
+
+    serialParser.on('data', (line) => {
+      const raw = line.trim()
+      // Try to extract number from line
+      // Handles formats: "23450", "  23450  ", "ST,GS,+023450KG", "+023450"
+      const match = raw.replace(/[^0-9.]/g, '')
+      const weight = parseFloat(match)
+      if (!isNaN(weight) && weight >= 0) {
+        if (mainWindow) {
+          mainWindow.webContents.send('serial:weight', weight)
+        }
+      }
+    })
+
+    serialPort.on('error', (err) => {
+      log.error('Serial port error:', err.message)
+      if (mainWindow) mainWindow.webContents.send('serial:error', err.message)
+    })
+
+    serialPort.on('open', () => {
+      log.info(`Serial port opened: ${portPath} @ ${baudRate} baud`)
+      if (mainWindow) mainWindow.webContents.send('serial:status', 'connected')
+    })
+
+    serialPort.on('close', () => {
+      log.info('Serial port closed')
+      if (mainWindow) mainWindow.webContents.send('serial:status', 'disconnected')
+    })
+
+  } catch (err) {
+    log.error('Failed to open serial port:', err.message)
+  }
+}
+
+// IPC handlers for serial port
+ipcMain.handle('serial:start', async () => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  const portPath = db.prepare("SELECT value FROM settings WHERE key = 'com_port'").get()?.value || 'COM1'
+  const baudRate = db.prepare("SELECT value FROM settings WHERE key = 'baud_rate'").get()?.value || '2400'
+  startSerialPort(portPath, baudRate)
+  return { success: true }
+})
+
+ipcMain.handle('serial:stop', () => {
+  if (serialPort?.isOpen) {
+    serialPort.close()
+  }
+  return { success: true }
+})
+
+ipcMain.handle('serial:list', async () => {
+  const ports = await SerialPort.list()
+  return ports
+})
+
 // Remove default menu (hides dev tools link and default help)
 
 Menu.setApplicationMenu(null)
@@ -56,6 +132,9 @@ app.whenReady().then(() => {
   }
   createWindow()
   // mainWindow.webContents.openDevTools()
+
+  // Auto-start serial port when app is ready
+  setTimeout(() => startSerialPort('COM1', '2400'), 3000)
 
   if (isDev) {
     const { globalShortcut } = require('electron')

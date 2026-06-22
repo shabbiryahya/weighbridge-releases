@@ -216,6 +216,32 @@ export default function WeighingScreen() {
   //   return () => clearInterval(t);
   // }, []);
 
+  // ── Live weight from serial port
+  useEffect(() => {
+    // Listen for weight from serial port
+    window.db.serial.onWeight((weight) => {
+      setLiveWeight(weight);
+      setIsStable(true);
+      // After 500ms of no new data, mark as unstable
+      clearTimeout(window._stableTimer);
+      window._stableTimer = setTimeout(() => setIsStable(false), 500);
+    });
+
+    window.db.serial.onStatus((status) => {
+      if (status === "disconnected") {
+        setLiveWeight(0);
+        setIsStable(false);
+      }
+    });
+
+    // Start serial port
+    window.db.serial.start();
+
+    return () => {
+      window.db.serial.stop();
+    };
+  }, []);
+
   // ── Capture weight into correct field
   const captureGross = useCallback(() => {
     if (!isStable) return;

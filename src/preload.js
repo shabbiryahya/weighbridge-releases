@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('db', {
     getCharges: () => ipcRenderer.invoke('settings:getCharges'),
     getPrint: () => ipcRenderer.invoke('settings:getPrint'),
   },
+  serial: {
+    start:  ()   => ipcRenderer.invoke('serial:start'),
+    stop:   ()   => ipcRenderer.invoke('serial:stop'),
+    list:   ()   => ipcRenderer.invoke('serial:list'),
+    onWeight: (cb) => ipcRenderer.on('serial:weight', (_, w) => cb(w)),
+    onStatus: (cb) => ipcRenderer.on('serial:status', (_, s) => cb(s)),
+    onError:  (cb) => ipcRenderer.on('serial:error',  (_, e) => cb(e)),
+  },
   tickets: {
     nextNo: () => ipcRenderer.invoke('tickets:nextNo'),
     save: (data) => ipcRenderer.invoke('tickets:save', data),
