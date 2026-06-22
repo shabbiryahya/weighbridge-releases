@@ -1028,26 +1028,6 @@ export default function SettingsScreen() {
             <br />
             All rights reserved
           </div>
-
-          {user?.role === "superadmin" && (
-            <button
-              onClick={() => window.db.session.forceLogout()}
-              style={{
-                marginTop: 16,
-                width: "100%",
-                padding: "10px",
-                background: "#e94560",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              🚪 Force Logout
-            </button>
-          )}
         </div>
       )}
       {/* ── Charges Configuration ── */}

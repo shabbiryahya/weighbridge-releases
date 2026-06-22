@@ -1334,15 +1334,6 @@ ipcMain.handle('session:clear', () => {
   }
 })
 
-// Force the current user to log out (e.g. superadmin kicking a session)
-ipcMain.handle('session:forceLogout', () => {
-  const fs = require('fs')
-  const sessionPath = path.join(app.getPath('userData'), 'session.json')
-  try { fs.unlinkSync(sessionPath) } catch (e) {}
-  if (mainWindow) mainWindow.webContents.send('auth:forceLogout')
-  return { success: true }
-})
-
 // Update license plan or status
 ipcMain.handle('licenseManager:update', async (event, licenseKey, updates) => {
   try {
