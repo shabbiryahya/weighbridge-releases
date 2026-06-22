@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('db', {
   settings: {
     getAll: () => ipcRenderer.invoke('settings:getAll'),
+    get: (key) => ipcRenderer.invoke('settings:get', key),
     update: (key, val) => ipcRenderer.invoke('settings:update', key, val),
     saveLogo: (base64) => ipcRenderer.invoke('settings:saveLogo', base64),
     getCharges: () => ipcRenderer.invoke('settings:getCharges'),

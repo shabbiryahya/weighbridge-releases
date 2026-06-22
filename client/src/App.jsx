@@ -103,6 +103,29 @@ function AppContent() {
     return () => clearInterval(interval);
   }, [can]);
 
+  useEffect(() => {
+    if (!can('sync')) return
+
+    const checkPlan = async () => {
+      try {
+        const currentPlan = await window.db.settings.get('license_plan')
+        const result = await window.db.license.validate()
+        if (result?.valid && result?.plan && result.plan !== currentPlan) {
+          console.log(`Plan changed: ${currentPlan} → ${result.plan}`)
+          await window.db.settings.update('license_plan', result.plan)
+          window.location.reload()
+        }
+      } catch (e) {
+        // Server unreachable — skip silently
+      }
+    }
+
+    // Check immediately on mount, then every 5 minutes
+    checkPlan()
+    const interval = setInterval(checkPlan, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [can])
+
   const renderPage = () => {
     switch (currentPage) {
       case "weighing":

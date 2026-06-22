@@ -314,14 +314,14 @@ export default function LoginScreen({ onLogin }) {
               </div>
             )}
 
-            {import.meta.env.DEV && (
+            {/* {import.meta.env.DEV && (
               <div style={{
                 marginTop: 16, fontSize: 11, color: "#aaa",
                 textAlign: "center", borderTop: "1px dashed #eee", paddingTop: 12,
               }}>
                 Dev: admin/Admin@2026 PIN:7491 | operator/Op@2026 PIN:3852
               </div>
-            )}
+            )} */}
 
           </div>
         </div>

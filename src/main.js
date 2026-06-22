@@ -103,6 +103,13 @@ ipcMain.handle('settings:getAll', () => {
   }, {})
 })
 
+ipcMain.handle('settings:get', (event, key) => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key)
+  return row?.value || null
+})
+
 ipcMain.handle('settings:update', (event, key, value) => {
   const { getDatabase } = require('./database')
   const db = getDatabase()
