@@ -84,6 +84,9 @@ function AppContent() {
     window.db.update.onDownloaded(() => {
       setUpdateToast({ msg: "✅ Update ready!", canInstall: true });
     });
+    window.db.session.onForceLogout(() => {
+      logout();
+    });
   }, []);
 
   useEffect(() => {

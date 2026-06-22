@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('db', {
     get:   ()     => ipcRenderer.invoke('session:get'),
     save:  (user) => ipcRenderer.invoke('session:save', user),
     clear: ()     => ipcRenderer.invoke('session:clear'),
+    forceLogout: () => ipcRenderer.invoke('session:forceLogout'),
+    onForceLogout: (cb) => ipcRenderer.on('auth:forceLogout', cb),
   },
   users: {
     getAll: () => ipcRenderer.invoke('users:getAll'),
