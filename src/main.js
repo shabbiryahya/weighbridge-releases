@@ -247,6 +247,34 @@ ipcMain.handle('tickets:getById', (event, id) => {
   return db.prepare('SELECT * FROM tickets WHERE id = ?').get(id)
 })
 
+ipcMain.handle('tickets:getByNo', (event, ticketNo) => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  return db.prepare('SELECT * FROM tickets WHERE ticket_no = ?').get(ticketNo)
+})
+
+ipcMain.handle('tickets:getLastByVehicle', (event, vehicleNo) => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  return db.prepare(`
+    SELECT * FROM tickets
+    WHERE vehicle_no = ? AND status = 'complete'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).get(vehicleNo)
+})
+
+ipcMain.handle('tickets:getAll', () => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  return db.prepare(`
+    SELECT ticket_no, vehicle_no, material_name, status
+    FROM tickets
+    ORDER BY ticket_no DESC
+    LIMIT 100
+  `).all()
+})
+
 ipcMain.handle('tickets:delete', (event, id) => {
   const { getDatabase } = require('./database')
   const db = getDatabase()
@@ -367,6 +395,25 @@ ipcMain.handle('vehicles:updateTare', (event, vehicleNo, tare) => {
     UPDATE vehicles SET standard_tare = ? WHERE vehicle_no = ?
   `).run(tare, vehicleNo)
   return { success: true }
+})
+
+ipcMain.handle('vehicles:getAllWithLastTrip', () => {
+  const { getDatabase } = require('./database')
+  const db = getDatabase()
+  return db.prepare(`
+    SELECT v.vehicle_no, v.standard_tare,
+           t.material_name as last_material,
+           t.gross_date as last_date
+    FROM vehicles v
+    LEFT JOIN tickets t ON t.id = (
+      SELECT id FROM tickets
+      WHERE vehicle_no = v.vehicle_no
+      AND status = 'complete'
+      ORDER BY created_at DESC LIMIT 1
+    )
+    WHERE v.is_active = 1
+    ORDER BY v.vehicle_no
+  `).all()
 })
 
 // ── MATERIALS ────────────────────────────────────────────────────────────────

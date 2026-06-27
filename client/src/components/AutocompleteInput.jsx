@@ -7,6 +7,7 @@ export default function AutocompleteInput({
   placeholder = '',
   label = '',
   required = false,
+  maxItems = 8,
 }) {
   const [open, setOpen]     = useState(false)
   const [query, setQuery]   = useState(value || '')
@@ -28,7 +29,7 @@ export default function AutocompleteInput({
 
   const filtered = suggestions.filter(s =>
     s.toLowerCase().includes(query.toLowerCase())
-  ).slice(0, 8)
+  ).slice(0, maxItems)
 
   const handleChange = (e) => {
     setQuery(e.target.value)

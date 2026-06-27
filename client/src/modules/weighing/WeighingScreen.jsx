@@ -147,6 +147,8 @@ export default function WeighingScreen() {
   const [isStable, setIsStable] = useState(false);
   const [clock, setClock] = useState(now());
   const [vehicleNos, setVehicleNos] = useState([]);
+  const [vehiclesWithHistory, setVehiclesWithHistory] = useState([]);
+  const [allTickets, setAllTickets] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [materialNames, setMaterialNames] = useState([]);
   const [supplierNames, setSupplierNames] = useState([]);
@@ -168,7 +170,7 @@ export default function WeighingScreen() {
   }, []);
 
   const loadAll = async () => {
-    const [nextNo, vNos, mats, sups, recs, recent, pending, ps, charges] =
+    const [nextNo, vNos, mats, sups, recs, recent, pending, ps, charges, allTkts, vHistory] =
       await Promise.all([
         window.db.tickets.nextNo(),
         window.db.vehicles.getAllNos(),
@@ -179,11 +181,15 @@ export default function WeighingScreen() {
         window.db.tickets.getPending(),
         window.db.settings.getPrint(),
         window.db.settings.getCharges(),
+        window.db.tickets.getAll(),
+        window.db.vehicles.getAllWithLastTrip(),
       ]);
 
     setChargesConfig(charges);
-    setPrintSettings(ps); // ps is the 8th result
+    setPrintSettings(ps);
     setVehicleNos(vNos);
+    setVehiclesWithHistory(vHistory);
+    setAllTickets(allTkts);
     setMaterials(mats);
     setMaterialNames(mats.map((m) => m.name));
     setSupplierNames(sups.map((s) => s.name));
@@ -216,25 +222,42 @@ export default function WeighingScreen() {
   //   return () => clearInterval(t);
   // }, []);
 
-  // ── Live weight from serial port
+  // ── Live weight from serial port with proper stability detection
   useEffect(() => {
-    // Listen for weight from serial port
+    const recentReadings = []; // tracks last 5 readings to detect stability
+
     window.db.serial.onWeight((weight) => {
       setLiveWeight(weight);
-      setIsStable(true);
-      // After 500ms of no new data, mark as unstable
+
+      // Keep last 5 readings
+      recentReadings.push(weight);
+      if (recentReadings.length > 5) recentReadings.shift();
+
+      // Stable = all 5 readings within ±20 kg of each other
+      if (recentReadings.length >= 5) {
+        const max = Math.max(...recentReadings);
+        const min = Math.min(...recentReadings);
+        setIsStable(max - min <= 20);
+      } else {
+        setIsStable(false); // not enough readings yet
+      }
+
+      // If no data arrives for 2 seconds → hardware disconnected or paused
       clearTimeout(window._stableTimer);
-      window._stableTimer = setTimeout(() => setIsStable(false), 500);
+      window._stableTimer = setTimeout(() => {
+        setIsStable(false);
+        recentReadings.length = 0;
+      }, 2000);
     });
 
     window.db.serial.onStatus((status) => {
       if (status === "disconnected") {
         setLiveWeight(0);
         setIsStable(false);
+        recentReadings.length = 0;
       }
     });
 
-    // Start serial port
     window.db.serial.start();
 
     return () => {
@@ -242,62 +265,147 @@ export default function WeighingScreen() {
     };
   }, []);
 
-  // ── Capture weight into correct field
+  // ── Manual capture buttons (⚡ in Weights card — operator override)
   const captureGross = useCallback(() => {
     if (!isStable) return;
     const { date, time } = now();
     setForm((f) => {
-      const updated = {
-        ...f,
-        gross_weight: liveWeight,
-        gross_date: date,
-        gross_time: time,
-      };
-      // Recalculate net and charges if tare exists
+      const updated = { ...f, gross_weight: liveWeight, gross_date: date, gross_time: time };
       if (updated.tare_weight) {
         updated.net_weight = Math.abs(liveWeight - updated.tare_weight);
-        if (updated.rate_per_ton) {
-          updated.charges = (
-            (updated.net_weight / 1000) *
-            updated.rate_per_ton
-          ).toFixed(2);
-        }
+        updated.charges = calcCharges(
+          chargesConfig?.charges_type || "per_ton",
+          parseFloat(chargesConfig?.charges_rate || 0) || updated.rate_per_ton,
+          updated.net_weight, updated.wheel_count,
+        );
       }
       return updated;
     });
-    showToast(
-      `Gross captured: ${liveWeight.toLocaleString("en-IN")} kg`,
-      "success",
-    );
-  }, [liveWeight, isStable]);
+    showToast(`Gross captured: ${liveWeight.toLocaleString("en-IN")} kg`, "success");
+  }, [liveWeight, isStable, chargesConfig]);
 
   const captureTare = useCallback(() => {
     if (!isStable) return;
     const { date, time } = now();
     setForm((f) => {
-      const updated = {
-        ...f,
-        tare_weight: liveWeight,
-        tare_date: date,
-        tare_time: time,
-      };
-      // Recalculate net and charges if gross exists
+      const updated = { ...f, tare_weight: liveWeight, tare_date: date, tare_time: time };
       if (updated.gross_weight) {
         updated.net_weight = Math.abs(updated.gross_weight - liveWeight);
-        if (updated.rate_per_ton) {
-          updated.charges = (
-            (updated.net_weight / 1000) *
-            updated.rate_per_ton
-          ).toFixed(2);
-        }
+        updated.charges = calcCharges(
+          chargesConfig?.charges_type || "per_ton",
+          parseFloat(chargesConfig?.charges_rate || 0) || updated.rate_per_ton,
+          updated.net_weight, updated.wheel_count,
+        );
       }
       return updated;
     });
+    showToast(`Tare captured: ${liveWeight.toLocaleString("en-IN")} kg`, "success");
+  }, [liveWeight, isStable, chargesConfig]);
+
+  // ── Smart top-bar capture — 1st press stores weight, 2nd press auto-assigns
+  const captureFirst = useCallback(() => {
+    if (!isStable) return;
+    const { date, time } = now();
+    setForm((f) => ({
+      ...f,
+      gross_weight: liveWeight,
+      gross_date: date,
+      gross_time: time,
+      tare_weight: "",
+      tare_date: "",
+      tare_time: "",
+      net_weight: "",
+    }));
     showToast(
-      `Tare captured: ${liveWeight.toLocaleString("en-IN")} kg`,
+      `1st weight: ${liveWeight.toLocaleString("en-IN")} kg — bring vehicle back for 2nd weight`,
       "success",
     );
   }, [liveWeight, isStable]);
+
+  const captureSecond = useCallback(() => {
+    if (!isStable) return;
+    const { date: newDate, time: newTime } = now();
+    const newWeight = liveWeight;
+    const cType = chargesConfig?.charges_type || "per_ton";
+    const cRate = parseFloat(chargesConfig?.charges_rate || 0);
+
+    setForm((f) => {
+      // Get the single existing weight (could be in gross or tare slot)
+      const existingWeight = parseFloat(f.gross_weight || f.tare_weight || 0);
+      const existingDate = f.gross_weight ? f.gross_date : f.tare_date;
+      const existingTime = f.gross_weight ? f.gross_time : f.tare_time;
+
+      // Higher = GROSS, Lower = TARE — always
+      const newIsHeavier = newWeight >= existingWeight;
+      const grossWeight = newIsHeavier ? newWeight : existingWeight;
+      const tareWeight  = newIsHeavier ? existingWeight : newWeight;
+      const grossDate   = newIsHeavier ? newDate : existingDate;
+      const grossTime   = newIsHeavier ? newTime : existingTime;
+      const tareDate    = newIsHeavier ? existingDate : newDate;
+      const tareTime    = newIsHeavier ? existingTime : newTime;
+      const netWeight   = grossWeight - tareWeight;
+
+      return {
+        ...f,
+        gross_weight: grossWeight,
+        gross_date:   grossDate,
+        gross_time:   grossTime,
+        tare_weight:  tareWeight,
+        tare_date:    tareDate,
+        tare_time:    tareTime,
+        net_weight:   netWeight,
+        charges: calcCharges(cType, cRate || f.rate_per_ton, netWeight, f.wheel_count),
+      };
+    });
+
+    showToast(`Net weight calculated automatically!`, "success");
+  }, [liveWeight, isStable, chargesConfig]);
+
+  // ── Top-bar button handler
+  const handleSmartCapture = () => {
+    const hasGross = !!form.gross_weight;
+    const hasTare  = !!form.tare_weight;
+    if (!hasGross && !hasTare) captureFirst();
+    else if (!hasGross || !hasTare) captureSecond();
+  };
+
+  // ── Ticket number lookup — load pending ticket by number
+  const handleTicketNoChange = async (val) => {
+    setForm((f) => ({ ...f, ticket_no: val }));
+    const no = parseInt(val);
+    if (!no) return;
+    try {
+      const ticket = await window.db.tickets.getByNo(no);
+      if (!ticket) return;
+      if (ticket.status === "complete") {
+        showToast(`Ticket #${no} is already complete`, "error");
+        return;
+      }
+      setForm({
+        id: ticket.id,
+        ticket_no: ticket.ticket_no,
+        vehicle_no: ticket.vehicle_no || "",
+        vehicle_type: ticket.vehicle_type || "Truck",
+        material_name: ticket.material_name || "",
+        supplier_name: ticket.supplier_name || "",
+        receiver_name: ticket.receiver_name || "",
+        gross_weight: ticket.gross_weight || "",
+        gross_date: ticket.gross_date || "",
+        gross_time: ticket.gross_time || "",
+        tare_weight: ticket.tare_weight || "",
+        tare_date: ticket.tare_date || "",
+        tare_time: ticket.tare_time || "",
+        net_weight: ticket.net_weight || "",
+        royalty_no: ticket.royalty_no || "",
+        transporter: ticket.transporter || "",
+        rate_per_ton: ticket.rate_per_ton || 0,
+        charges: ticket.charges || 0,
+        remarks: ticket.remarks || "",
+        status: ticket.status,
+      });
+      showToast(`Ticket #${no} loaded — add missing weight`, "success");
+    } catch (_) {}
+  };
 
   // ── Smart field setter
   const setField = (key, val) => {
@@ -306,7 +414,7 @@ export default function WeighingScreen() {
       const cType = chargesConfig?.charges_type || "per_ton";
       const cRate = parseFloat(chargesConfig?.charges_rate || 0);
 
-      // When vehicle selected → check for standard tare
+      // When vehicle selected → check for standard tare + last trip history
       if (key === "vehicle_no" && val.length > 3) {
         window.db.vehicles.getByNo(val).then((vehicle) => {
           if (vehicle?.standard_tare > 0) {
@@ -325,6 +433,21 @@ export default function WeighingScreen() {
             });
             showToast(
               `Standard tare ${vehicle.standard_tare} kg auto filled`,
+              "success",
+            );
+          }
+        });
+
+        window.db.tickets.getLastByVehicle(val).then((lastTicket) => {
+          if (lastTicket) {
+            setForm((prev) => ({
+              ...prev,
+              material_name: lastTicket.material_name || prev.material_name,
+              supplier_name: lastTicket.supplier_name || prev.supplier_name,
+              receiver_name: lastTicket.receiver_name || prev.receiver_name,
+            }));
+            showToast(
+              `Last trip: ${lastTicket.material_name} — ${lastTicket.gross_date}`,
               "success",
             );
           }
@@ -507,6 +630,19 @@ export default function WeighingScreen() {
     setForm(emptyForm(nextNo));
   };
 
+  // ── Computed suggestion arrays
+  const ticketSuggestions = [
+    ...allTickets.filter((t) => t.status === "pending"),
+    ...allTickets.filter((t) => t.status !== "pending"),
+  ].map(
+    (t) =>
+      `#${t.ticket_no} — ${t.vehicle_no || "—"} — ${t.material_name || "—"} — ${t.status === "pending" ? "⏳ Pending" : "✅ Complete"}`,
+  );
+
+  const vehicleSuggestions = vehiclesWithHistory.map((v) =>
+    v.last_material ? `${v.vehicle_no} — ${v.last_material}` : v.vehicle_no,
+  );
+
   // ── Computed values
   const isComplete = form.gross_weight && form.tare_weight;
   const isMissingGross = form.tare_weight && !form.gross_weight;
@@ -605,22 +741,53 @@ export default function WeighingScreen() {
           </div>
         </div>
 
-        {/* Capture buttons — separate for Gross and Tare */}
+        {/* Smart auto-assign capture button */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={captureGross}
-            style={S.captureBtn(isStable)}
-            title="Capture current weight as GROSS"
-          >
-            ⬇️ Capture GROSS
-          </button>
-          <button
-            onClick={captureTare}
-            style={S.captureBtn(isStable)}
-            title="Capture current weight as TARE"
-          >
-            ⬇️ Capture TARE
-          </button>
+          {(() => {
+            const hasOne = !!form.gross_weight !== !!form.tare_weight
+              || (!!form.gross_weight && !form.tare_weight)
+              || (!form.gross_weight && !!form.tare_weight);
+            const bothDone = !!form.gross_weight && !!form.tare_weight;
+            const noneYet  = !form.gross_weight && !form.tare_weight;
+            const bg = bothDone ? "#555" : !isStable ? "#555" : noneYet ? "#00d4aa" : "#ff9800";
+            const label = bothDone
+              ? "✅ Done — Net Calculated"
+              : noneYet
+                ? "⬇️ Capture 1st Weight"
+                : "⬇️ Capture 2nd Weight";
+            const hint = bothDone
+              ? null
+              : noneYet
+                ? "System auto-assigns Gross & Tare"
+                : "System will compare & auto-assign";
+            return (
+              <div style={{ textAlign: "center" }}>
+                <button
+                  onClick={handleSmartCapture}
+                  disabled={bothDone || !isStable}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: bothDone || !isStable ? "not-allowed" : "pointer",
+                    border: "none",
+                    background: bg,
+                    color: "white",
+                    whiteSpace: "nowrap",
+                    display: "block",
+                  }}
+                >
+                  {label}
+                </button>
+                {hint && (
+                  <div style={{ fontSize: 10, color: "#aaa", marginTop: 3 }}>
+                    {hint}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div style={{ textAlign: "right" }}>
@@ -644,12 +811,12 @@ export default function WeighingScreen() {
             fontWeight: 600,
           }}
         >
-          ✏️ Editing Ticket #{form.ticket_no} —
+          ✏️ Ticket #{form.ticket_no} —
           {isMissingGross &&
-            " Gross weight missing. Capture Gross to complete."}
+            " 1st weight done. Put vehicle back on bridge and press Capture 2nd Weight."}
           {isMissingTare &&
-            " Tare weight missing. Capture Tare or enter manually to complete."}
-          {isComplete && " Both weights present. Ready to save!"}
+            " 1st weight done. Put vehicle back on bridge and press Capture 2nd Weight."}
+          {isComplete && " Both weights done. System has calculated Net & Charges. Ready to save!"}
         </div>
       )}
 
@@ -678,11 +845,16 @@ export default function WeighingScreen() {
             <div style={S.cardTitle}>Ticket Info</div>
             <div style={S.grid3}>
               <div>
-                <label style={S.label}>Ticket No.</label>
-                <input
-                  style={{ ...S.inputReadonly, fontWeight: 700, fontSize: 15 }}
-                  value={form.ticket_no}
-                  readOnly
+                <AutocompleteInput
+                  label="Ticket No."
+                  value={String(form.ticket_no)}
+                  suggestions={ticketSuggestions}
+                  maxItems={5}
+                  placeholder="Type to search..."
+                  onChange={(v) => {
+                    const match = v.match(/^#?(\d+)/);
+                    handleTicketNoChange(match ? match[1] : v);
+                  }}
                 />
               </div>
               <div>
@@ -703,8 +875,10 @@ export default function WeighingScreen() {
               <AutocompleteInput
                 label="Vehicle No. *"
                 value={form.vehicle_no}
-                onChange={(v) => setField("vehicle_no", v.toUpperCase())}
-                suggestions={vehicleNos}
+                onChange={(v) =>
+                  setField("vehicle_no", v.split(" — ")[0].toUpperCase())
+                }
+                suggestions={vehicleSuggestions}
                 placeholder="e.g. GJ01XX1234"
               />
               <div>
@@ -983,12 +1157,10 @@ export default function WeighingScreen() {
               }}
             >
               {isComplete
-                ? "✅ Complete — Ready to save & print"
-                : isMissingGross
-                  ? "⏳ Pending — Gross weight missing"
-                  : isMissingTare
-                    ? "⏳ Pending — Tare weight missing"
-                    : "📝 New ticket — Enter weights"}
+                ? "✅ Done — Net & Charges calculated. Save now!"
+                : isMissingGross || isMissingTare
+                  ? "⏳ 1st weight captured — waiting for 2nd weight"
+                  : "📝 New ticket — Put vehicle on bridge & capture"}
             </div>
 
             {/* Buttons */}

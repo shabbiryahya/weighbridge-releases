@@ -1,6 +1,6 @@
 {
   "name": "weighbridge-app",
-  "version": "1.0.16",
+  "version": "1.0.19",
   "description": "Weighbridge Management System",
   "main": "src/main.js",
   "author": {
@@ -16,6 +16,7 @@
   },
   "build": {
     "appId": "com.saifenterprise.weighbridge",
+    "npmRebuild": false,
     "productName": "Weighbridge Management System",
     "copyright": "Copyright © 2026 Shabbir Yahya",
     "publish": {
@@ -57,14 +58,15 @@
       "src/**/*",
       "client/dist/**/*",
       "package.json",
-      "node_modules/**/*",
-      ".env"
+      "node_modules/**/*"
     ],
     "extraResources": [],
     "asar": true,
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*",
-      "node_modules/mdb-reader/**/*"
+      "node_modules/mdb-reader/**/*",
+      "node_modules/@serialport/**/*",
+      "node_modules/serialport/**/*"
     ]
   },
   "dependencies": {

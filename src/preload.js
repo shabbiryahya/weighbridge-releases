@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('db', {
     getPending: () => ipcRenderer.invoke('tickets:getPending'),
     getById: (id) => ipcRenderer.invoke('tickets:getById', id),
     delete: (id) => ipcRenderer.invoke('tickets:delete', id),
+    getByNo: (no) => ipcRenderer.invoke('tickets:getByNo', no),
+    getLastByVehicle: (vehicleNo) => ipcRenderer.invoke('tickets:getLastByVehicle', vehicleNo),
+    getAll: () => ipcRenderer.invoke('tickets:getAll'),
   },
   vehicles: {
     getAll: () => ipcRenderer.invoke('vehicles:getAll'),
@@ -31,6 +34,7 @@ contextBridge.exposeInMainWorld('db', {
     getByNo: (no) => ipcRenderer.invoke('vehicles:getByNo', no),
     autoSave: (no, type) => ipcRenderer.invoke('vehicles:autoSave', no, type),
     updateTare: (no, tare) => ipcRenderer.invoke('vehicles:updateTare', no, tare),
+    getAllWithLastTrip: () => ipcRenderer.invoke('vehicles:getAllWithLastTrip'),
   },
   materials: {
     getAll: () => ipcRenderer.invoke('materials:getAll'),
