@@ -436,7 +436,8 @@ export default function WeighingScreen() {
         window.db.vehicles.getByNo(val).then((vehicle) => {
           if (vehicle?.standard_tare > 0) {
             setForm((prev) => {
-              const u = { ...prev, tare_weight: vehicle.standard_tare };
+              const { date: td, time: tt } = now();
+              const u = { ...prev, tare_weight: vehicle.standard_tare, tare_date: td, tare_time: tt };
               if (u.gross_weight) {
                 u.net_weight = Math.abs(u.gross_weight - vehicle.standard_tare);
                 u.charges = calcCharges(
@@ -507,8 +508,11 @@ export default function WeighingScreen() {
         updated.charges = calcCharges(cType, val, f.net_weight, f.wheel_count);
       }
 
-      // When tare typed manually → recalculate net
+      // When tare typed manually → stamp date/time and recalculate net
       if (key === "tare_weight" && f.gross_weight) {
+        const { date: td, time: tt } = now();
+        updated.tare_date = td;
+        updated.tare_time = tt;
         const net = parseFloat(f.gross_weight) - parseFloat(val);
         updated.net_weight = net;
         updated.charges = calcCharges(
@@ -519,8 +523,11 @@ export default function WeighingScreen() {
         );
       }
 
-      // When gross typed manually → recalculate net
+      // When gross typed manually → stamp date/time and recalculate net
       if (key === "gross_weight" && f.tare_weight) {
+        const { date: gd, time: gt } = now();
+        updated.gross_date = gd;
+        updated.gross_time = gt;
         const net = parseFloat(val) - parseFloat(f.tare_weight);
         updated.net_weight = net;
         updated.charges = calcCharges(

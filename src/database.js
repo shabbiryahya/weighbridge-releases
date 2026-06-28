@@ -35,6 +35,10 @@ function runMigrations(db) {
     `ALTER TABLE tickets  ADD COLUMN status TEXT DEFAULT 'pending'`,
     `ALTER TABLE users    ADD COLUMN pin TEXT`,
     `ALTER TABLE users    ADD COLUMN full_name TEXT`,
+    `ALTER TABLE tickets  ADD COLUMN gross_date TEXT`,
+    `ALTER TABLE tickets  ADD COLUMN gross_time TEXT`,
+    `ALTER TABLE tickets  ADD COLUMN tare_date TEXT`,
+    `ALTER TABLE tickets  ADD COLUMN tare_time TEXT`,
   ]
 
   migrations.forEach(sql => {

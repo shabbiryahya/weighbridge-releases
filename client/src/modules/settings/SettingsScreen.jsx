@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import MigrationTool from "./MigrationTool";
 import DiagnosticsScreen from "./DiagnosticsScreen";
 import LicenseManager from "./LicenseManager";
+import CoordinateCalibrator from "./CoordinateCalibrator";
 import MaskedSecretReveal from "../../components/MaskedSecretReveal";
 import { useAuth } from "../../hooks/useAuth";
 import PlanGate from "../../components/PlanGate";
@@ -1187,6 +1188,16 @@ export default function SettingsScreen() {
                 label: "📋 Data Only (pre-printed paper)",
                 desc: "App fills in values only. Your pre-printed paper already has the structure.",
               },
+              {
+                value: "tractor_2copy",
+                label: "🖨️ Tractor 2-Copy (10\"×12\", 4\" cut)",
+                desc: "ORIGINAL + DUPLICATE side by side on standard Indian dot matrix paper (254mm wide). Header space left blank for your pre-printed stationery.",
+              },
+              {
+                value: "coordinate_2copy",
+                label: "📍 Coordinate 2-Copy (old system style)",
+                desc: "Prints values at exact mm positions on pre-printed stationery — same approach as the old VB.NET system, extended for ORIGINAL + DUPLICATE side by side.",
+              },
             ].map((opt) => (
               <label
                 key={opt.value}
@@ -1222,6 +1233,17 @@ export default function SettingsScreen() {
               </label>
             ))}
           </div>
+
+          {/* Coordinate Calibrator — only when coordinate_2copy mode is active */}
+          {local.print_mode === "coordinate_2copy" && (
+            <div style={S.card}>
+              <div style={S.cardTitle}>Coordinate Calibration</div>
+              <CoordinateCalibrator
+                settings={local}
+                onSave={(json) => setField("coordinate_positions", json)}
+              />
+            </div>
+          )}
 
           {/* Printer Selection */}
           <div style={S.card}>

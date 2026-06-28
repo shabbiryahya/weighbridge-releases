@@ -16,3 +16,7 @@ client/dist/
 *.docx
 *.md
 *.txt
+
+
+screenshots/
+ *.zip

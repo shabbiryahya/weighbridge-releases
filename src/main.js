@@ -27,6 +27,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     },
     title: 'Weighbridge Management System',
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     show: false
   })
 
