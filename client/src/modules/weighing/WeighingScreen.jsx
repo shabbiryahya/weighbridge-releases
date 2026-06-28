@@ -409,6 +409,23 @@ export default function WeighingScreen() {
 
   // ── Smart field setter
   const setField = (key, val) => {
+    // Real-time weight validation
+    if (key === "gross_weight" || key === "tare_weight") {
+      const n = parseFloat(val);
+      if (val !== "" && (isNaN(n) || n <= 0)) {
+        showToast("Weight must be greater than zero", "error");
+        return;
+      }
+      if (key === "tare_weight" && form.gross_weight && n > parseFloat(form.gross_weight)) {
+        showToast("Tare cannot be more than Gross weight", "error");
+        return;
+      }
+      if (key === "gross_weight" && form.tare_weight && n < parseFloat(form.tare_weight)) {
+        showToast("Gross cannot be less than Tare weight", "error");
+        return;
+      }
+    }
+
     setForm((f) => {
       const updated = { ...f, [key]: val };
       const cType = chargesConfig?.charges_type || "per_ton";
@@ -492,7 +509,7 @@ export default function WeighingScreen() {
 
       // When tare typed manually → recalculate net
       if (key === "tare_weight" && f.gross_weight) {
-        const net = Math.abs(f.gross_weight - val);
+        const net = parseFloat(f.gross_weight) - parseFloat(val);
         updated.net_weight = net;
         updated.charges = calcCharges(
           cType,
@@ -504,7 +521,7 @@ export default function WeighingScreen() {
 
       // When gross typed manually → recalculate net
       if (key === "gross_weight" && f.tare_weight) {
-        const net = Math.abs(val - f.tare_weight);
+        const net = parseFloat(val) - parseFloat(f.tare_weight);
         updated.net_weight = net;
         updated.charges = calcCharges(
           cType,
