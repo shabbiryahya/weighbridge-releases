@@ -123,16 +123,16 @@ Menu.setApplicationMenu(null)
 
 // ── Start app ────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
-  // Migrate data from any previous app name folder to current "SaifTeq" folder
+  // Migrate data from any previous app name folder to current "saifteq-weighbridge" folder
   try {
     const fs = require('fs')
     const newPath = app.getPath('userData')
     if (!fs.existsSync(newPath)) {
-      for (const oldName of ['Saif Enterprises', 'weighbridge-app']) {
+      for (const oldName of ['SaifTeq-Weighbridge-App', 'SaifTeq', 'Saif Enterprises', 'weighbridge-app']) {
         const oldPath = path.join(app.getPath('appData'), oldName)
         if (fs.existsSync(oldPath)) {
           fs.cpSync(oldPath, newPath, { recursive: true })
-          log.info(`Migrated data from ${oldName} to SaifTeq`)
+          log.info(`Migrated data from ${oldName} to saifteq-weighbridge`)
           break
         }
       }

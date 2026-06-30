@@ -1,6 +1,6 @@
 {
-  "name": "SaifTeq",
-  "version": "1.0.23",
+  "name": "saifteq-weighbridge",
+  "version": "1.0.24",
   "description": "Weighbridge Management System",
   "main": "src/main.js",
   "author": {
