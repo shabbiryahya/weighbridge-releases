@@ -123,14 +123,19 @@ Menu.setApplicationMenu(null)
 
 // ── Start app ────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
-  // Migrate data from old "Saif Enterprises" folder to new "SaifTeq" folder
+  // Migrate data from any previous app name folder to current "SaifTeq" folder
   try {
     const fs = require('fs')
-    const oldPath = path.join(app.getPath('appData'), 'Saif Enterprises')
     const newPath = app.getPath('userData')
-    if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
-      fs.cpSync(oldPath, newPath, { recursive: true })
-      log.info('Migrated data from Saif Enterprises to SaifTeq')
+    if (!fs.existsSync(newPath)) {
+      for (const oldName of ['Saif Enterprises', 'weighbridge-app']) {
+        const oldPath = path.join(app.getPath('appData'), oldName)
+        if (fs.existsSync(oldPath)) {
+          fs.cpSync(oldPath, newPath, { recursive: true })
+          log.info(`Migrated data from ${oldName} to SaifTeq`)
+          break
+        }
+      }
     }
   } catch (e) {
     log.warn('Data migration skipped:', e.message)
