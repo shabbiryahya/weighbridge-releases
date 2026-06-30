@@ -354,8 +354,8 @@ export default function HelpScreen() {
           </p>
           {[
             ['📱 WhatsApp / Phone', '+91 9574713452'],
-            ['📧 Email', 'shabbir@saifenterprise.com'],
-            ['🌐 Website', 'saifenterprise.com'],
+            ['📧 Email', 'support@saifteq.com'],
+            ['🌐 Website', 'saifteq.com'],
             ['🕐 Support Hours', 'Mon–Sat, 9 AM – 6 PM'],
             ['⚡ Response Time', 'Within 24 hours'],
           ].map(([label, value]) => (

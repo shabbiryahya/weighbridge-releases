@@ -1510,6 +1510,101 @@ ipcMain.handle('licenseManager:delete', async (event, licenseKey) => {
   }
 })
 
+// ─── EOD EMAIL ───────────────────────────────────────
+
+async function sendEodEmail() {
+  try {
+    const { getDatabase } = require('./database')
+    const db = getDatabase()
+
+    const getSetting = (key) =>
+      db.prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || ''
+
+    const licenseKey = getSetting('license_key')
+    const toEmail = getSetting('eod_owner_email')
+    const clientName = getSetting('license_client') || getSetting('company_name')
+
+    if (!toEmail) return { success: false, error: 'No owner email configured' }
+    if (!licenseKey) return { success: false, error: 'No license key' }
+
+    const today = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    }).replace(/\//g, '-')
+
+    const summary = db.prepare(`
+      SELECT
+        COUNT(*) as total_tickets,
+        SUM(net_weight) as total_net,
+        SUM(gross_weight) as total_gross,
+        SUM(charges) as total_charges
+      FROM tickets
+      WHERE gross_date = ? OR tare_date = ?
+    `).get(today, today)
+
+    const tickets = db.prepare(`
+      SELECT ticket_no, vehicle_no, material_name, net_weight, charges, status
+      FROM tickets
+      WHERE gross_date = ? OR tare_date = ?
+      ORDER BY ticket_no DESC
+    `).all(today, today)
+
+    const response = await fetch(`${getConfig().SERVER_URL}/api/eod/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey, toEmail, clientName, date: today, summary, tickets }),
+      signal: AbortSignal.timeout(15000),
+    })
+
+    const data = await response.json()
+
+    if (data.success) {
+      db.prepare(`
+        INSERT OR REPLACE INTO settings (key, value, updated_at)
+        VALUES ('last_eod_sent_date', ?, CURRENT_TIMESTAMP)
+      `).run(today)
+    }
+
+    return data
+  } catch (e) {
+    log.error('EOD email error:', e.message)
+    return { success: false, error: e.message }
+  }
+}
+
+ipcMain.handle('eod:sendNow', async () => {
+  return await sendEodEmail()
+})
+
+// Check every minute whether it's time to send EOD email
+setInterval(async () => {
+  try {
+    const { getDatabase } = require('./database')
+    const db = getDatabase()
+
+    const getSetting = (key) =>
+      db.prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || ''
+
+    if (getSetting('eod_enabled') !== 'true') return
+
+    const sendTime = getSetting('eod_send_time') || '20:00'
+    const now = new Date()
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    if (currentTime !== sendTime) return
+
+    const today = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    }).replace(/\//g, '-')
+
+    const lastSent = getSetting('last_eod_sent_date')
+    if (lastSent === today) return
+
+    log.info('EOD scheduler: sending email for', today)
+    await sendEodEmail()
+  } catch (e) {
+    log.error('EOD scheduler error:', e.message)
+  }
+}, 60000)
+
 // ─── SYNC TO SERVER ──────────────────────────────────
 
 ipcMain.handle('sync:push', async () => {

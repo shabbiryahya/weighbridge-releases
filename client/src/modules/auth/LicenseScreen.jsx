@@ -184,7 +184,7 @@ export default function LicenseScreen({ onActivated }) {
           <div style={{ marginTop: 4, color: "#666" }}>
             Contact: <strong>Shabbir</strong> · +91 9574713452
           </div>
-          <div style={{ color: "#666" }}>shabbir@saifenterprise.com</div>
+          <div style={{ color: "#666" }}>support@saifteq.com</div>
         </div>
       </div>
     </div>

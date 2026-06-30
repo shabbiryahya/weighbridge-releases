@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "author": {
     "name": "Shabbir Yahya",
-    "email": "shabbir@saifenterprise.com"
+    "email": "support@saifteq.com"
   },
   "scripts": {
     "dev": "concurrently \"npm run client\" \"npm run electron\"",

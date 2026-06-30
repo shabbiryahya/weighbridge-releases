@@ -114,6 +114,9 @@ contextBridge.exposeInMainWorld('db', {
   sync: {
     push: () => ipcRenderer.invoke('sync:push'),
   },
+  eod: {
+    sendNow: () => ipcRenderer.invoke('eod:sendNow'),
+  },
   update: {
     onAvailable: (cb) => ipcRenderer.on('update:available', cb),
     onDownloaded: (cb) => ipcRenderer.on('update:downloaded', cb),

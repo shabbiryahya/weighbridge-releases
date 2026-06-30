@@ -626,8 +626,8 @@ export default function SettingsScreen() {
                   <input
                     style={S.input}
                     type="email"
-                    value={local.eod_email || ""}
-                    onChange={(e) => setField("eod_email", e.target.value)}
+                    value={local.eod_owner_email || ""}
+                    onChange={(e) => setField("eod_owner_email", e.target.value)}
                     placeholder="owner@gmail.com"
                     disabled={local.eod_enabled !== "true"}
                   />
@@ -637,26 +637,47 @@ export default function SettingsScreen() {
                   <input
                     style={S.input}
                     type="time"
-                    value={local.eod_time || "20:00"}
-                    onChange={(e) => setField("eod_time", e.target.value)}
+                    value={local.eod_send_time || "20:00"}
+                    onChange={(e) => setField("eod_send_time", e.target.value)}
                     disabled={local.eod_enabled !== "true"}
                   />
                 </div>
               </div>
-              <div
-                style={{
-                  background: "#fff8f0",
-                  border: "1px solid #ff9800",
-                  borderRadius: 8,
-                  padding: "12px 16px",
-                  fontSize: 13,
-                  color: "#cc7a00",
-                }}
-              >
-                ⚠️ EOD email will be configured with your Gmail in Phase 13.
-                Save your owner email address here now.
-              </div>
             </div>
+          </div>
+
+          <div style={S.card}>
+            <div style={S.cardTitle}>Test EOD Email</div>
+            <p style={{ fontSize: 13, color: "#666", marginBottom: 12 }}>
+              Send the EOD report for today immediately to verify the email is
+              working correctly.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const result = await window.db.eod.sendNow();
+                  if (result.success) {
+                    showToast("EOD email sent successfully!");
+                  } else {
+                    showToast(result.error || "Failed to send EOD email", "error");
+                  }
+                } catch (e) {
+                  showToast("Error: " + e.message, "error");
+                }
+              }}
+              style={{
+                background: "#1a1a2e",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 22px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              📧 Send Test Email Now
+            </button>
           </div>
         </PlanGate>
       )}
@@ -982,8 +1003,8 @@ export default function SettingsScreen() {
           {/* Contact details */}
           {[
             ["📱 WhatsApp / Phone", "+91 9574713452"],
-            ["📧 Email", "shabbir@saifenterprise.com"],
-            ["🌐 Website", "https://saifenterprise.com"],
+            ["📧 Email", "support@saifteq.com"],
+            ["🌐 Website", "https://saifteq.com"],
             ["🕐 Support Hours", "Mon–Sat, 9 AM – 6 PM"],
             ["⚡ Response Time", "Within 24 hours"],
           ].map(([label, value]) => (
