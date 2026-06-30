@@ -1,6 +1,6 @@
 {
-  "name": "Saif Enterprises",
-  "version": "1.0.21",
+  "name": "SaifTeq",
+  "version": "1.0.22",
   "description": "Weighbridge Management System",
   "main": "src/main.js",
   "author": {
@@ -15,7 +15,7 @@
     "dist": "npm run build && node scripts/ensure-github-release.js && electron-builder --publish always"
   },
   "build": {
-    "appId": "com.saifenterprise.weighbridge",
+    "appId": "weighbridgesaifteq.com",
     "npmRebuild": false,
     "productName": "Weighbridge Management System",
     "copyright": "Copyright © 2026 Shabbir Yahya",

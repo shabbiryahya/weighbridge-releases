@@ -7,7 +7,7 @@ const fs = require('fs')
 const path = require('path')
 
 const DEFAULTS = {
-  SERVER_URL: 'http://wcddev.duckdns.org',
+  SERVER_URL: 'https://weighbridge.saifteq.com',
   WB_DEV_KEY: 'WB_LICENSE_2026_SECRET',
 }
 
@@ -27,7 +27,10 @@ function loadConfig() {
 
   try {
     const saved = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-    return { ...DEFAULTS, ...saved }
+    // DEFAULTS always win for dev-controlled keys — self-heals on URL changes
+    const merged = { ...saved, SERVER_URL: DEFAULTS.SERVER_URL, WB_DEV_KEY: DEFAULTS.WB_DEV_KEY }
+    fs.writeFileSync(configPath, JSON.stringify(merged, null, 2))
+    return merged
   } catch (e) {
     // Corrupted file — fall back to defaults, don't crash the app
     return { ...DEFAULTS }
